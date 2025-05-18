@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "mem_allocator"
+name = "rcmalloc"
 version = "0.1.0"

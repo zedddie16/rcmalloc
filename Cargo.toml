@@ -1,6 +1,15 @@
 [package]
-name = "mem_allocator"
+# Really Cool Memory Allocator
+name = "rcmalloc" 
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+
+[lib]
+name = "rcmalloc"
+path = "src/lib.rs"
+
+[[bin]]
+name = "alloc-test"
+path = "src/main.rs"
