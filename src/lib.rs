@@ -96,7 +96,7 @@ unsafe impl GlobalAlloc for ReallyCoolAllocator {
             }
         }
 
-        ptr
+        ptr // alloc must return **hopefully** valid pointer to where data block starts
     }
     unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {}
 }
