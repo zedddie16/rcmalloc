@@ -4,7 +4,7 @@ use std::ptr::null_mut;
 use std::sync::atomic::{AtomicUsize, Ordering::Relaxed};
 
 // ARENA_SIZE corresponds to HEAP size. n * 1024 where n is the quantity of bytes
-pub const ARENA_SIZE: usize = 128 * 1024;
+pub const ARENA_SIZE: usize = 152400 * 1024;
 
 // MAX_SUPPORTED_ALIGN is the largest alignment allocator guarantees to support.
 // Any allocation requiring alignment up to this value will be placed at an address
@@ -30,29 +30,73 @@ unsafe impl GlobalAlloc for ReallyCoolAllocator {
         let size = layout.size();
         let align = layout.align();
 
-        let align_mask_to_round_down = !(align - 1);
-
         if align > MAX_SUPPORTED_ALIGN {
+            if cfg!(feature = "debug_alloc") {
+                eprintln!(
+                    "rcmalloc: Requested alignment {} exceeds MAX_SUPPORTED_ALIGN",
+                    align
+                );
+            }
             return null_mut();
         }
 
-        let mut allocated = 0;
-        if self
-            .remaining
-            .fetch_update(Relaxed, Relaxed, |mut remaining| {
-                if size > remaining {
-                    return None;
-                }
-                remaining -= size;
-                remaining &= align_mask_to_round_down;
-                allocated = remaining;
-                Some(remaining)
-            })
-            .is_err()
-        {
+        let current_remaining = self.remaining.load(Relaxed);
+        let current_offset = ARENA_SIZE - current_remaining;
+        let aligned_offset = (current_offset + (align - 1)) & !(align - 1);
+        let required_space = aligned_offset + size;
+
+        if cfg!(feature = "debug_alloc") {
+            eprintln!(
+                "rcmalloc: alloc(size={}, align={}) - current_remaining={}, current_offset={}, aligned_offset={}, required_space={}",
+                size, align, current_remaining, current_offset, aligned_offset, required_space
+            );
+        }
+
+        if required_space > ARENA_SIZE {
+            if cfg!(feature = "debug_alloc") {
+                eprintln!("rcmalloc: Out of memory - required_space > ARENA_SIZE");
+            }
             return null_mut();
-        };
-        unsafe { self.arena.get().cast::<u8>().add(allocated) }
+        }
+
+        let allocation_size = size;
+        let new_remaining = self
+            .remaining
+            .fetch_sub(allocation_size + (aligned_offset - current_offset), Relaxed);
+
+        if cfg!(feature = "debug_alloc") {
+            eprintln!(
+                "rcmalloc: new_remaining after fetch_sub = {}",
+                new_remaining
+            );
+        }
+
+        if new_remaining < allocation_size + (aligned_offset - current_offset) {
+            if cfg!(feature = "debug_alloc") {
+                eprintln!(
+                    "rcmalloc: Allocation failed due to race or insufficient space after subtraction"
+                );
+            }
+            self.remaining
+                .fetch_add(allocation_size + (aligned_offset - current_offset), Relaxed);
+            return null_mut();
+        }
+
+        let ptr = unsafe { self.arena.get().cast::<u8>().add(aligned_offset) };
+
+        if cfg!(feature = "debug_alloc") {
+            unsafe {
+                static mut COUNT: usize = 0;
+                COUNT += 1;
+                let current_count = COUNT;
+                eprintln!(
+                    "rcmalloc: Allocation successful at ptr={:?}, count={}",
+                    ptr, current_count
+                );
+            }
+        }
+
+        ptr
     }
     unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {}
 }
