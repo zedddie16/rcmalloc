@@ -16,6 +16,13 @@ pub struct ReallyCoolAllocator {
     arena: UnsafeCell<[u8; ARENA_SIZE]>,
     remaining: AtomicUsize,
 }
+#[allow(dead_code)]
+pub struct MemoryList<'b> {
+    ptr: u8,
+    layout: Layout,
+    free: bool,
+    next: Option<&'b MemoryList<'b>>,
+}
 
 #[global_allocator] // when basic required methods will be implemented
 pub static ALLOCATOR: ReallyCoolAllocator = ReallyCoolAllocator {
@@ -98,5 +105,5 @@ unsafe impl GlobalAlloc for ReallyCoolAllocator {
 
         ptr // alloc must return **hopefully** valid pointer to where data block starts
     }
-    unsafe fn dealloc(&self, _ptr: *mut u8, _layout: Layout) {}
+    unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {}
 }
