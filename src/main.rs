@@ -6,9 +6,11 @@ fn main() {
     let v = Box::new(123_u64);
     println!("Allocated value: {}", v);
 
+    let mut vec = Vec::new();
     let mut counter = 0;
     loop {
-        let v = Box::new(true);
+        let v = 1_u64;
+        vec.push(v);
 
         counter += 1;
         println!("counter: {}", counter);
