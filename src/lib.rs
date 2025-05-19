@@ -16,13 +16,6 @@ pub struct ReallyCoolAllocator {
     arena: UnsafeCell<[u8; ARENA_SIZE]>,
     remaining: AtomicUsize,
 }
-#[allow(dead_code)]
-pub struct MemoryList<'b> {
-    ptr: u8,
-    layout: Layout,
-    free: bool,
-    next: Option<&'b MemoryList<'b>>,
-}
 
 #[global_allocator] // when basic required methods will be implemented
 pub static ALLOCATOR: ReallyCoolAllocator = ReallyCoolAllocator {
