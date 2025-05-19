@@ -32,6 +32,7 @@ pub static ALLOCATOR: ReallyCoolAllocator = ReallyCoolAllocator {
 
 unsafe impl Sync for ReallyCoolAllocator {}
 
+// Bump allocator
 unsafe impl GlobalAlloc for ReallyCoolAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let size = layout.size();
