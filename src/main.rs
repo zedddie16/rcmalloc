@@ -1,10 +1,19 @@
-use std::time::Instant;
+use std::{
+    alloc::{Layout, dealloc},
+    time::Instant,
+};
 // if not explicitly used, uses default allocator
 #[allow(unused_imports)]
 use rcmalloc::*;
 
 fn main() {
     let mut counter = 0;
+    {
+        loop {
+            let beb = 21;
+            _ = beb
+        }
+    }
     let timer = Instant::now();
     while counter < 1310590_u64 {
         let _v = 1_u64;
