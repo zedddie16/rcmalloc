@@ -99,6 +99,12 @@ unsafe impl GlobalAlloc for ReallyCoolAllocator<'static> {
 
         let ptr = unsafe { self.arena.get().cast::<u8>().add(aligned_offset) };
 
+
+        self.head.layout = layout;
+        self.head.ptr = unsafe { NonNull::new_unchecked(ptr) };
+        self.head.free = false;
+        self.head.next = ;
+
         if cfg!(feature = "debug_alloc") {
             unsafe {
                 static mut COUNT: usize = 0;
