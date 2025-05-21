@@ -21,7 +21,7 @@ pub struct MemoryList<'b> {
     ptr: u8,
     layout: Layout,
     free: bool,
-    next: Option<&'b MemoryList<'b>>,
+    next: Option<&'b mut MemoryList<'b>>,
 }
 
 #[global_allocator] // when basic required methods will be implemented
