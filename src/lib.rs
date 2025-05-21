@@ -1,5 +1,6 @@
 use std::alloc::{GlobalAlloc, Layout};
 use std::cell::UnsafeCell;
+use std::ptr::NonNull;
 use std::ptr::null_mut;
 use std::sync::atomic::{AtomicUsize, Ordering::Relaxed};
 
@@ -12,27 +13,34 @@ pub const ARENA_SIZE: usize = 10240 * 1024;
 pub const MAX_SUPPORTED_ALIGN: usize = 4096;
 
 #[repr(C, align(4096))] // MAX_SUPPORTED_ALIGN
-pub struct ReallyCoolAllocator {
+pub struct ReallyCoolAllocator<'a> {
     arena: UnsafeCell<[u8; ARENA_SIZE]>,
+    head: MemoryList<'a>,
     remaining: AtomicUsize,
 }
 #[allow(dead_code)]
 pub struct MemoryList<'b> {
-    ptr: u8,
+    ptr: NonNull<u8>, // not nul as valid memory allocation obv ensure ptr to be not null
     layout: Layout,
     free: bool,
     next: Option<&'b mut MemoryList<'b>>,
 }
 
-#[global_allocator] // when basic required methods will be implemented
+#[global_allocator]
 pub static ALLOCATOR: ReallyCoolAllocator = ReallyCoolAllocator {
     arena: UnsafeCell::new([0x55; ARENA_SIZE]),
+    head: MemoryList {
+        ptr: unsafe { NonNull::new_unchecked(ALLOCATOR.arena.get().cast::<u8>()) },
+        layout: unsafe { Layout::from_size_align_unchecked(0, 1) },
+        free: true,
+        next: None,
+    },
     remaining: AtomicUsize::new(ARENA_SIZE),
 };
 
-unsafe impl Sync for ReallyCoolAllocator {}
+unsafe impl Sync for ReallyCoolAllocator<'static> {}
 
-unsafe impl GlobalAlloc for ReallyCoolAllocator {
+unsafe impl GlobalAlloc for ReallyCoolAllocator<'static> {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let size = layout.size();
         let align = layout.align();
