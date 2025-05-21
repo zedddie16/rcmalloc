@@ -1,4 +1,5 @@
 use std::alloc::{GlobalAlloc, Layout};
+use std::mem::MaybeUninit;
 use std::cell::UnsafeCell;
 use std::ptr::NonNull;
 use std::ptr::null_mut;
@@ -15,43 +16,48 @@ pub const MAX_SUPPORTED_ALIGN: usize = 4096;
 #[repr(C, align(4096))] // MAX_SUPPORTED_ALIGN
 pub struct ReallyCoolAllocator<'a> {
     arena: UnsafeCell<[u8; ARENA_SIZE]>,
-    head: MemoryList<'a>,
+    meta_offset: UnsafeCell<AtomicUsize>,
+    head: UnsafeCell<MaybeUninit<MemoryList<'a>>>,
     remaining: AtomicUsize,
 }
 #[allow(dead_code)]
 pub struct MemoryList<'b> {
     ptr: NonNull<u8>, // not nul as valid memory allocation obv ensure ptr to be not null
-    meta_offset: UnsafeCell<usize>,
     layout: Layout,
     free: bool,
     next: Option<&'b mut MemoryList<'b>>,
 }
-impl MemoryList<'static> {
+
+
+impl ReallyCoolAllocator<'static> {
+
 unsafe fn alloc_metadata_node<'a>(&'a self) -> Option<&'a mut MemoryList<'a>> {
-    let offset = unsafe { *self.meta_offset.get() };
+        unsafe {
+    let offset = self.meta_offset.get();
     let node_size = std::mem::size_of::<MemoryList>();
     let align = std::mem::align_of::<MemoryList>();
 
-    let align_offset = (offset + align - 1) & !(align - 1);
+    let align_offset = ((*offset).load(Relaxed) + align - 1) & !(align - 1);
     if align_offset + node_size > ARENA_SIZE {
         return None;
     }
 
     let ptr = self.arena.get().cast::<u8>().add(align_offset) as *mut MemoryList<'a>;
-    unsafe {*self.meta_offset.get() = align_offset + node_size} ;
-    unsafe {Some(&mut *ptr)}
+    *self.meta_offset.get() = AtomicUsize::from( align_offset + node_size) ;
+    Some(&mut *ptr)
+}}
 }
-}
-
 #[global_allocator]
 pub static ALLOCATOR: ReallyCoolAllocator = ReallyCoolAllocator {
+    meta_offset: UnsafeCell::new(AtomicUsize::new(0)),
     arena: UnsafeCell::new([0x55; ARENA_SIZE]),
-    head: MemoryList {
-        ptr: unsafe { NonNull::new_unchecked(ALLOCATOR.arena.get().cast::<u8>()) },
-        layout: unsafe { Layout::from_size_align_unchecked(0, 1) },
-        free: true,
-        next: None,
-    },
+    head: UnsafeCell::new(MaybeUninit::uninit()),
+    // head: MemoryList {
+    //     ptr: unsafe { NonNull::new_unchecked(ALLOCATOR.arena.get().cast::<u8>()) },
+    //     layout: unsafe { Layout::from_size_align_unchecked(0, 1) },
+    //     free: true,
+    //     next: None,
+    // },
     remaining: AtomicUsize::new(ARENA_SIZE),
 };
 
