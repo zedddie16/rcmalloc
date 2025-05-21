@@ -21,9 +21,26 @@ pub struct ReallyCoolAllocator<'a> {
 #[allow(dead_code)]
 pub struct MemoryList<'b> {
     ptr: NonNull<u8>, // not nul as valid memory allocation obv ensure ptr to be not null
+    meta_offset: UnsafeCell<usize>,
     layout: Layout,
     free: bool,
     next: Option<&'b mut MemoryList<'b>>,
+}
+impl MemoryList<'static> {
+unsafe fn alloc_metadata_node<'a>(&'a self) -> Option<&'a mut MemoryList<'a>> {
+    let offset = unsafe { *self.meta_offset.get() };
+    let node_size = std::mem::size_of::<MemoryList>();
+    let align = std::mem::align_of::<MemoryList>();
+
+    let align_offset = (offset + align - 1) & !(align - 1);
+    if align_offset + node_size > ARENA_SIZE {
+        return None;
+    }
+
+    let ptr = self.arena.get().cast::<u8>().add(align_offset) as *mut MemoryList<'a>;
+    unsafe {*self.meta_offset.get() = align_offset + node_size} ;
+    unsafe {Some(&mut *ptr)}
+}
 }
 
 #[global_allocator]
@@ -41,6 +58,7 @@ pub static ALLOCATOR: ReallyCoolAllocator = ReallyCoolAllocator {
 unsafe impl Sync for ReallyCoolAllocator<'static> {}
 
 unsafe impl GlobalAlloc for ReallyCoolAllocator<'static> {
+
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         let size = layout.size();
         let align = layout.align();
