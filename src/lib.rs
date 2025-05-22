@@ -66,8 +66,32 @@ unsafe impl Sync for ReallyCoolAllocator<'static> {}
 unsafe impl GlobalAlloc for ReallyCoolAllocator<'static> {
 
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
+        unsafe {
         let size = layout.size();
         let align = layout.align();
+
+
+let mut head_initialized = false;
+        if (*self.meta_offset.get()).load(Relaxed) == 0 { 
+            match self.alloc_metadata_node() {
+                Some(head_node) => {
+                    let ptr_to_head_uninit = self.head.get();
+                    (*ptr_to_head_uninit).write(MemoryList {
+                        ptr: NonNull::dangling(), 
+                        layout: Layout::from_size_align_unchecked(0, 1),
+                        free: true, 
+                        next: None,
+                    });
+                    head_initialized = true;
+                }
+                None => {
+                    if cfg!(feature = "debug_alloc") {
+                        eprintln!("rcmalloc: Failed to allocate initial head metadata node.");
+                    }
+                    return null_mut();
+                }
+            }
+        }
 
         if align > MAX_SUPPORTED_ALIGN {
             if cfg!(feature = "debug_alloc") {
@@ -142,6 +166,6 @@ unsafe impl GlobalAlloc for ReallyCoolAllocator<'static> {
         }
 
         ptr // alloc must return **hopefully** valid pointer to where data block starts
-    }
+    }}
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {}
 }
