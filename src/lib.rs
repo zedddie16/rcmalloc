@@ -14,6 +14,11 @@ pub const ARENA_SIZE: usize = 10240 * 1024;
 // divisible by it. It does not define a max allocation size.
 pub const MAX_SUPPORTED_ALIGN: usize = 4096;
 
+#[allow(dead_code)]
+pub struct FreeMemList<'y> {
+    size: usize,
+    next: Option<NonNull<MemoryList<'y>>>, // next free list node
+}
 #[repr(C, align(4096))] // MAX_SUPPORTED_ALIGN
 pub struct ReallyCoolAllocator<'a> {
     arena: UnsafeCell<[u8; ARENA_SIZE]>,
@@ -28,6 +33,7 @@ pub struct MemoryList<'b> {
     free: bool,
     next: Option<&'b mut MemoryList<'b>>,
 }
+#[allow(dead_code)]
 fn align_up(addr: usize, align: usize) -> usize {
     (addr + align - 1) & !(align - 1)
 }
