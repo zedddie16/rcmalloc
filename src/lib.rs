@@ -1,3 +1,4 @@
+// I am now starting implementing free list allocator instead of simple bump one
 use std::alloc::{GlobalAlloc, Layout};
 use std::cell::UnsafeCell;
 use std::mem::MaybeUninit;
