@@ -27,7 +27,9 @@ pub struct MemoryList<'b> {
     free: bool,
     next: Option<&'b mut MemoryList<'b>>,
 }
-
+fn align_up(addr: usize, align: usize) -> usize {
+    (addr + align - 1) & !(align - 1)
+}
 impl ReallyCoolAllocator<'static> {
     unsafe fn alloc_metadata_node<'a>(&'a self) -> Option<&'a mut MemoryList<'a>> {
         unsafe {
