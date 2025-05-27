@@ -1,4 +1,10 @@
-// I am now starting implementing free list allocator instead of simple bump one
+// Free list allocator logic:
+// at the very start First and only FreeMemList is the size
+// of whole ARENA, whenever allocation needed its decreasing itself
+// to size of ARENA - size of new allocation. When there are some allocations,
+// and some are getting dropped(deallocated) their pointer and size are becoming
+// a new nodes of FreeMemList, and if two free nodes are contiguos in memory
+// they are megre(coalesce) and become a one bigger FreeMemList node
 use std::alloc::{GlobalAlloc, Layout};
 use std::cell::UnsafeCell;
 use std::mem::MaybeUninit;
@@ -19,7 +25,7 @@ pub struct FreeMemList<'y> {
     size: usize,
     next: Option<NonNull<MemoryList<'y>>>, // next free list node
 }
-#[repr(C, align(4096))] // MAX_SUPPORTED_ALIGN
+#[repr(C, align(4096))] // MAX_SUPPORTED_ALIGN 
 pub struct ReallyCoolAllocator<'a> {
     arena: UnsafeCell<[u8; ARENA_SIZE]>,
     meta_offset: UnsafeCell<AtomicUsize>,

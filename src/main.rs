@@ -7,7 +7,7 @@ use std::{
 use rcmalloc::*;
 
 fn main() {
-    let mut counter = 0;
+    let counter = 0;
     {
         loop {
             let beb = 21;
