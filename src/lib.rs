@@ -42,9 +42,9 @@ fn align_up(addr: usize, align: usize) -> usize {
 pub static ALLOCATOR: ReallyCoolAllocator = ReallyCoolAllocator {
     arena: UnsafeCell::new([0x55; ARENA_SIZE]),
     mem_list: FreeMemList {
-        ptr: (),
-        size: (),
-        next: (),
+        ptr: &ALLOCATOR.arena as *const UnsafeCell<[u8; ARENA_SIZE]> as *mut u8,
+        size: ARENA_SIZE,
+        next: None,
     },
 };
 
