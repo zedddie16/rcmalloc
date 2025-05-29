@@ -25,33 +25,27 @@ pub const MAX_SUPPORTED_ALIGN: usize = 4096;
 // next - next FreeMemList node
 #[allow(dead_code)]
 pub struct FreeMemList {
-    ptr: u8,
+    ptr: *mut u8,
     size: usize,
     next: Option<NonNull<FreeMemList>>,
 }
 #[repr(C, align(4096))] // MAX_SUPPORTED_ALIGN 
 pub struct ReallyCoolAllocator {
     arena: UnsafeCell<[u8; ARENA_SIZE]>,
-    meta_offset: UnsafeCell<AtomicUsize>,
     mem_list: FreeMemList,
 }
 #[allow(dead_code)]
 fn align_up(addr: usize, align: usize) -> usize {
     (addr + align - 1) & !(align - 1)
 }
-
 #[global_allocator]
 pub static ALLOCATOR: ReallyCoolAllocator = ReallyCoolAllocator {
-    meta_offset: UnsafeCell::new(AtomicUsize::new(0)),
     arena: UnsafeCell::new([0x55; ARENA_SIZE]),
-    head: UnsafeCell::new(MaybeUninit::uninit()),
-    // head: MemoryList {
-    //     ptr: unsafe { NonNull::new_unchecked(ALLOCATOR.arena.get().cast::<u8>()) },
-    //     layout: unsafe { Layout::from_size_align_unchecked(0, 1) },
-    //     free: true,
-    //     next: None,
-    // },
-    remaining: AtomicUsize::new(ARENA_SIZE),
+    mem_list: FreeMemList {
+        ptr: (),
+        size: (),
+        next: (),
+    },
 };
 
 unsafe impl Sync for ReallyCoolAllocator {}
