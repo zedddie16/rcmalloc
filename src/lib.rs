@@ -30,34 +30,16 @@ pub struct FreeMemList {
     next: Option<NonNull<FreeMemList>>,
 }
 #[repr(C, align(4096))] // MAX_SUPPORTED_ALIGN 
-pub struct ReallyCoolAllocator<'a> {
+pub struct ReallyCoolAllocator {
     arena: UnsafeCell<[u8; ARENA_SIZE]>,
     meta_offset: UnsafeCell<AtomicUsize>,
-    // head: UnsafeCell<MaybeUninit<MemoryList<'a>>>,
-    remaining: AtomicUsize,
+    mem_list: FreeMemList,
 }
 #[allow(dead_code)]
 fn align_up(addr: usize, align: usize) -> usize {
     (addr + align - 1) & !(align - 1)
 }
-impl ReallyCoolAllocator<'static> {
-    unsafe fn alloc_metadata_node<'a>(&'a self) -> Option<&'a mut MemoryList<'a>> {
-        unsafe {
-            let offset = self.meta_offset.get();
-            let node_size = std::mem::size_of::<MemoryList>();
-            let align = std::mem::align_of::<MemoryList>();
 
-            let align_offset = ((*offset).load(Relaxed) + align - 1) & !(align - 1);
-            if align_offset + node_size > ARENA_SIZE {
-                return None;
-            }
-
-            let ptr = self.arena.get().cast::<u8>().add(align_offset) as *mut MemoryList<'a>;
-            *self.meta_offset.get() = AtomicUsize::from(align_offset + node_size);
-            Some(&mut *ptr)
-        }
-    }
-}
 #[global_allocator]
 pub static ALLOCATOR: ReallyCoolAllocator = ReallyCoolAllocator {
     meta_offset: UnsafeCell::new(AtomicUsize::new(0)),
@@ -72,9 +54,9 @@ pub static ALLOCATOR: ReallyCoolAllocator = ReallyCoolAllocator {
     remaining: AtomicUsize::new(ARENA_SIZE),
 };
 
-unsafe impl Sync for ReallyCoolAllocator<'static> {}
+unsafe impl Sync for ReallyCoolAllocator {}
 
-unsafe impl GlobalAlloc for ReallyCoolAllocator<'static> {
+unsafe impl GlobalAlloc for ReallyCoolAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         unsafe {
             let size = layout.size();
