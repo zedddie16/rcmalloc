@@ -17,7 +17,7 @@
 //
 //
 // Also, for a basic understanding of ptr system, imagine this as virtual memory:
-//           .a b-a = memory offset  .b
+//           .a b-a = memory offset  .b     end of ARENA .c
 // +---------+-----------------------+-------------------+
 // |         |~~~~~~~~~~~~~~~~~~~~~~~|```````````````````|
 // | smthng  |~~~~~~~~~~~~~~~~~~~~~~~|```````````````````|
