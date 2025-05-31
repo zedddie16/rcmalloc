@@ -1,3 +1,11 @@
+use std::alloc::{GlobalAlloc, Layout};
+use std::cell::UnsafeCell;
+use std::mem::MaybeUninit;
+use std::ptr::NonNull;
+use std::ptr::null_mut;
+use std::sync::atomic::{AtomicUsize, Ordering::Relaxed};
+
+//
 // Free list allocator logic:
 // at the very start First and only FreeMemList is the size
 // of whole ARENA, whenever allocation needed its decreasing itself
@@ -29,12 +37,6 @@
 // so with that said, ptrs are relative and counted by offseting from
 // some starting point.
 //
-use std::alloc::{GlobalAlloc, Layout};
-use std::cell::UnsafeCell;
-use std::mem::MaybeUninit;
-use std::ptr::NonNull;
-use std::ptr::null_mut;
-use std::sync::atomic::{AtomicUsize, Ordering::Relaxed};
 
 // ARENA_SIZE corresponds to HEAP size. n * 1024 where n is the quantity of bytes
 pub const ARENA_SIZE: usize = 10240 * 1024;
