@@ -14,6 +14,21 @@
 // and some are getting dropped(deallocated) their pointer and size are becoming
 // a new nodes of FreeMemList, and if two free nodes are contiguos in memory
 // they are megre(coalesce) and become a one bigger FreeMemList node
+//
+//
+// Also, for a basic understanding of ptr system, imagine this as virtual memory:
+//           .a b-a = memory offset  .b
+// +---------+-----------------------+-------------------+
+// |         |~~~~~~~~~~~~~~~~~~~~~~~|```````````````````|
+// | smthng  |~~~~~~~~~~~~~~~~~~~~~~~|```````````````````|
+// |         |~~~~~~~~~~~~~~~~~~~~~~~|```````````````````|
+// +---------+-----------------------+-------------------+
+//           ^base pointer           ^base pointer + memory offset
+//           to the start
+//           of ARENA
+// so with that said, ptrs are relative and counted by offseting from
+// some starting point.
+//
 use std::alloc::{GlobalAlloc, Layout};
 use std::cell::UnsafeCell;
 use std::mem::MaybeUninit;
