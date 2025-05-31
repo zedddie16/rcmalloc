@@ -1,6 +1,12 @@
 // Free list allocator logic:
 // at the very start First and only FreeMemList is the size
 // of whole ARENA, whenever allocation needed its decreasing itself
+// +--------------------------+  +--------------------------+
+// |                          |  |         FreeMemList      |
+// |        ARENA_SIZE        |  |         first node       |
+// |                          |  |        size of arena     |
+// +--------------------------+  +--------------------------+
+//
 // to size of ARENA - size of new allocation. When there are some allocations,
 // and some are getting dropped(deallocated) their pointer and size are becoming
 // a new nodes of FreeMemList, and if two free nodes are contiguos in memory
