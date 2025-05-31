@@ -56,28 +56,6 @@ unsafe impl GlobalAlloc for ReallyCoolAllocator {
             let size = layout.size();
             let align = layout.align();
 
-            let mut head_initialized = false;
-            if (*self.meta_offset.get()).load(Relaxed) == 0 {
-                match self.alloc_metadata_node() {
-                    Some(head_node) => {
-                        let ptr_to_head_uninit = self.head.get();
-                        (*ptr_to_head_uninit).write(MemoryList {
-                            ptr: NonNull::dangling(),
-                            layout: Layout::from_size_align_unchecked(0, 1),
-                            free: true,
-                            next: None,
-                        });
-                        head_initialized = true;
-                    }
-                    None => {
-                        if cfg!(feature = "debug_alloc") {
-                            eprintln!("rcmalloc: Failed to allocate initial head metadata node.");
-                        }
-                        return null_mut();
-                    }
-                }
-            }
-
             if align > MAX_SUPPORTED_ALIGN {
                 if cfg!(feature = "debug_alloc") {
                     eprintln!(
@@ -87,9 +65,8 @@ unsafe impl GlobalAlloc for ReallyCoolAllocator {
                 }
                 return null_mut();
             }
+            if self.mem_list.size > size {}
 
-            let current_remaining = self.remaining.load(Relaxed);
-            let current_offset = ARENA_SIZE - current_remaining;
             let aligned_offset = (current_offset + (align - 1)) & !(align - 1);
             let required_space = aligned_offset + size;
 
