@@ -91,6 +91,9 @@ unsafe impl Sync for ReallyCoolAllocator {}
 unsafe impl GlobalAlloc for ReallyCoolAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         unsafe {
+            // TODO: loop which iterates through the FreeMemList Linked list
+            // and finds the fit for requested allocation and splits the node
+            // if its bigger then requested (with align)
             let size = layout.size();
             let align = layout.align();
 
