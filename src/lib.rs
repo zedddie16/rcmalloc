@@ -67,6 +67,12 @@ pub struct FreeMemList {
     size: usize,
     next: Option<NonNull<FreeMemList>>,
 }
+// Iter struct for FreeMemList, needed in order to
+// implement iteration through the FreeMemList
+#[allow(dead_code)]
+struct FreeMemListIter<'a> {
+    current: Option<&'a FreeMemList>,
+}
 #[repr(C, align(4096))] // MAX_SUPPORTED_ALIGN 
 pub struct ReallyCoolAllocator {
     arena: UnsafeCell<[u8; ARENA_SIZE]>,
@@ -94,6 +100,8 @@ unsafe impl GlobalAlloc for ReallyCoolAllocator {
             // TODO: loop which iterates through the FreeMemList Linked list
             // and finds the fit for requested allocation and splits the node
             // if its bigger then requested (with align)
+            self.mem_list.
+
             let size = layout.size();
             let align = layout.align();
 
