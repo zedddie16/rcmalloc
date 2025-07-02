@@ -37,6 +37,13 @@ use std::sync::atomic::{AtomicUsize, Ordering::Relaxed};
 // so with that said, ptrs are relative and counted by offseting from
 // some starting point.
 //
+//                 | node management |
+// ╔═══════════╗ ╔═══════════╗ ╔═══════════╗ ╔═══════════╗
+// ║free node 1║►║free node 2║►║free node 3║►║free node 4║
+// ╚═══════════╝ ╚═══════════╝ ╚═══════════╝ ╚═══════════╝
+// if free node 2 of FreeMemList is getting filled, we'll need to
+// remove it and connect first and third, or if it's bigger then requested
+// size(but still match by algorithm) then its getting
 
 // ARENA_SIZE corresponds to HEAP size. n * 1024 where n is the quantity of bytes
 pub const ARENA_SIZE: usize = 10240 * 1024;
