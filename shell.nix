@@ -1,9 +1,4 @@
-
-{ pkgs ? import <nixpkgs> {}
-}: pkgs.mkShell {
-  nativeBuildInputs = with pkgs.buildPackages; [
-    cargo
-    gcc 
-    rustc
-  ];
+{ pkgs ? import <nixpkgs> { } }:
+pkgs.mkShell {
+  nativeBuildInputs = with pkgs.buildPackages; [ cargo rustfmt gcc rustc ];
 }

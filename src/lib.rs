@@ -100,10 +100,13 @@ unsafe impl GlobalAlloc for ReallyCoolAllocator {
             // TODO: loop which iterates through the FreeMemList Linked list
             // and finds the fit for requested allocation and splits the node
             // if its bigger then requested (with align)
-            self.mem_list.
 
             let size = layout.size();
             let align = layout.align();
+
+            let iter = FreeMemListIter {
+                current: Some(&self.mem_list),
+            };
 
             if align > MAX_SUPPORTED_ALIGN {
                 if cfg!(feature = "debug_alloc") {
@@ -116,57 +119,21 @@ unsafe impl GlobalAlloc for ReallyCoolAllocator {
             }
             if self.mem_list.size > size {}
 
-            let aligned_offset = (current_offset + (align - 1)) & !(align - 1);
-            let required_space = aligned_offset + size;
+            let ptr = self
+                .arena
+                .get()
+                .cast::<u8>()
+                .add(self.mem_list.ptr as usize);
 
-            if cfg!(feature = "debug_alloc") {
-                eprintln!(
-                    "rcmalloc: alloc(size={}, align={}) - current_remaining={}, current_offset={}, aligned_offset={}, required_space={}",
-                    size, align, current_remaining, current_offset, aligned_offset, required_space
-                );
-            }
-
-            if required_space > ARENA_SIZE {
-                if cfg!(feature = "debug_alloc") {
-                    eprintln!("rcmalloc: Out of memory - required_space > ARENA_SIZE");
-                }
-                return null_mut();
-            }
-
-            let allocation_size = size;
-            let new_remaining = self
-                .remaining
-                .fetch_sub(allocation_size + (aligned_offset - current_offset), Relaxed);
-
-            if cfg!(feature = "debug_alloc") {
-                eprintln!(
-                    "rcmalloc: new_remaining after fetch_sub = {}",
-                    new_remaining
-                );
-            }
-
-            if new_remaining < allocation_size + (aligned_offset - current_offset) {
-                if cfg!(feature = "debug_alloc") {
-                    eprintln!(
-                        "rcmalloc: Allocation failed due to race or insufficient space after subtraction"
-                    );
-                }
-                self.remaining
-                    .fetch_add(allocation_size + (aligned_offset - current_offset), Relaxed);
-                return null_mut();
-            }
-
-            let ptr = self.arena.get().cast::<u8>().add(aligned_offset);
-
-            if cfg!(feature = "debug_alloc") {
-                static mut COUNT: usize = 0;
-                COUNT += 1;
-                let current_count = COUNT;
-                eprintln!(
-                    "rcmalloc: Allocation successful at ptr={:?}, count={}",
-                    ptr, current_count
-                );
-            }
+            // if cfg!(feature = "debug_alloc") {
+            //     static mut COUNT: usize = 0;
+            //     COUNT += 1;
+            //     let current_count = COUNT;
+            //     eprintln!(
+            //         "rcmalloc: Allocation successful at ptr={:?}, count={}",
+            //         ptr, current_count
+            //     );
+            // }
 
             ptr // alloc must return **hopefully** valid pointer to where data block starts
         }

@@ -7,14 +7,18 @@ use std::{
 use rcmalloc::*;
 
 fn main() {
-    let counter = 0;
-    {
-        loop {
-            let beb = 21;
-            _ = beb
-        }
-    }
+    let mut counter = 0;
+    // {
+    //     loop {
+    //         let beb = 21;
+    //         _ = beb
+    //     }
+    // }
     let timer = Instant::now();
+    println!(
+        "    let mut counter = 0;
+"
+    );
     while counter < 1310590_u64 {
         let _v = 1_u64;
         counter += 1;
